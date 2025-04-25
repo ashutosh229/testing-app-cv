@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Send the image URL to your ML API endpoint
       final response = await http.post(
-        Uri.parse('YOUR_API_ENDPOINT_URL'), // Replace with your API endpoint
+        Uri.parse('http://localhost:5000/predict'), // Replace with your API endpoint
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'image_url': imageUrl}),
       );
