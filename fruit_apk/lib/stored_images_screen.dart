@@ -10,7 +10,10 @@ class _StoredImagesScreenState extends State<StoredImagesScreen> {
   final SupabaseClient supabase = Supabase.instance.client;
 
   Future<List<Map<String, dynamic>>> fetchImages() async {
-    final response = await supabase.from('image_urls').select();
+    final response = await supabase
+        .from('image_urls')
+        .select()
+        .order('created_at', ascending: false);
     return response as List<Map<String, dynamic>>;
   }
 
@@ -63,10 +66,41 @@ class _StoredImagesScreenState extends State<StoredImagesScreen> {
     );
   }
 
+  Color _getPredictionColor(String? prediction) {
+    if (prediction == null) return Colors.grey;
+    
+    switch (prediction.toLowerCase()) {
+      case 'green':
+        return Colors.green;
+      case 'ripe':
+        return Colors.yellow.shade800;
+      case 'overripe':
+        return Colors.orange;
+      case 'decay':
+        return Colors.brown;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Stored Images")),
+      appBar: AppBar(
+        title: Text("Stored Images"),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF6B1495),
+                Color(0xFF613DC1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchImages(),
         builder: (context, snapshot) {
@@ -84,15 +118,18 @@ class _StoredImagesScreenState extends State<StoredImagesScreen> {
           return GridView.builder(
             padding: EdgeInsets.all(10),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 1, // Two columns
+              crossAxisCount: 2, // Two columns
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: 3 / 4, // Adjust height-width ratio
+              childAspectRatio: 4 / 5, // Adjust height-width ratio
             ),
             itemCount: images.length,
             itemBuilder: (context, index) {
+              final imageData = images[index];
+              final prediction = imageData['prediction'] as String?;
+              
               return GestureDetector(
-                onLongPress: () => _showDeleteDialog(images[index]['url']),
+                onLongPress: () => _showDeleteDialog(imageData['url']),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
@@ -101,12 +138,40 @@ class _StoredImagesScreenState extends State<StoredImagesScreen> {
                       BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: Image.network(
-                      images[index]['url'],
-                      fit: BoxFit.cover,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(15),
+                            topRight: Radius.circular(15),
+                          ),
+                          child: Image.network(
+                            imageData['url'],
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: _getPredictionColor(prediction).withOpacity(0.3),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(15),
+                            bottomRight: Radius.circular(15),
+                          ),
+                        ),
+                        child: Text(
+                          prediction ?? 'Unknown',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
